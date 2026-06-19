@@ -7,7 +7,8 @@ import { IOSTextInput } from '../../src/components/IOSTextInput';
 import { OfferRow } from '../../src/components/OfferRow';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { VideoGuideCard } from '../../src/components/VideoGuideCard';
-import { findVideoGuide, partCategories, searchMarketplaceOffers } from '../../src/data/mock';
+import { partCategories } from '../../src/data/mock';
+import { findVideoGuide, isAiConfigured, searchPartOffers } from '../../src/services/gemini';
 import { spacing, typography, useTheme } from '../../src/theme';
 import { MarketplaceOffer, VideoGuide } from '../../src/types';
 
@@ -17,16 +18,23 @@ export default function PartsScreen() {
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
   const [customPart, setCustomPart] = useState('');
   const [results, setResults] = useState<{ offers: MarketplaceOffer[]; video: VideoGuide } | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const partName = customPart.trim() || partCategories.find((c) => c.id === selectedPartId)?.name || '';
   const canSearch = bikeModel.trim().length > 0 && partName.length > 0;
 
-  function handleSearch() {
-    if (!canSearch) return;
-    setResults({
-      offers: searchMarketplaceOffers(partName, bikeModel),
-      video: findVideoGuide(partName),
-    });
+  async function handleSearch() {
+    if (!canSearch || loading) return;
+    setLoading(true);
+    try {
+      const [offers, video] = await Promise.all([
+        searchPartOffers(partName, bikeModel),
+        findVideoGuide(partName, bikeModel),
+      ]);
+      setResults({ offers, video });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -72,7 +80,7 @@ export default function PartsScreen() {
         </View>
 
         <View style={{ marginTop: spacing.lg }}>
-          <IOSButton title="Найти запчасть" onPress={handleSearch} disabled={!canSearch} />
+          <IOSButton title="Найти запчасть" onPress={handleSearch} disabled={!canSearch} loading={loading} />
         </View>
       </Card>
 
@@ -93,7 +101,9 @@ export default function PartsScreen() {
               <OfferRow key={offer.id} offer={offer} />
             ))}
             <Text style={[typography.caption, { color: colors.tertiaryLabel, marginTop: spacing.sm }]}>
-              Цены и наличие — демо-данные. Нажмите на предложение, чтобы открыть поиск на сайте маркетплейса.
+              {isAiConfigured
+                ? 'Цены и ссылки найдены ИИ через веб-поиск и могут быть неточными — проверяйте перед покупкой.'
+                : 'Цены и наличие — демо-данные. Нажмите на предложение, чтобы открыть поиск на сайте маркетплейса.'}
             </Text>
           </Card>
         </>

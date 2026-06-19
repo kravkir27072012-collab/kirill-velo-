@@ -7,7 +7,8 @@ import { IOSButton } from '../../src/components/IOSButton';
 import { IOSTextInput } from '../../src/components/IOSTextInput';
 import { OfferRow } from '../../src/components/OfferRow';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
-import { popularBikeModels, searchBikeOffers } from '../../src/data/mock';
+import { popularBikeModels } from '../../src/data/mock';
+import { isAiConfigured, searchBikeOffers } from '../../src/services/gemini';
 import { spacing, typography, useTheme } from '../../src/theme';
 import { MarketplaceOffer } from '../../src/types';
 
@@ -15,12 +16,18 @@ export default function BikesScreen() {
   const { colors } = useTheme();
   const [bikeModel, setBikeModel] = useState('');
   const [offers, setOffers] = useState<MarketplaceOffer[] | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  function handleSearch(model?: string) {
+  async function handleSearch(model?: string) {
     const query = model ?? bikeModel;
-    if (!query.trim()) return;
+    if (!query.trim() || loading) return;
     setBikeModel(query);
-    setOffers(searchBikeOffers(query));
+    setLoading(true);
+    try {
+      setOffers(await searchBikeOffers(query));
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -45,7 +52,7 @@ export default function BikesScreen() {
         </ScrollView>
 
         <View style={{ marginTop: spacing.lg }}>
-          <IOSButton title="Найти велосипед" onPress={() => handleSearch()} disabled={!bikeModel.trim()} />
+          <IOSButton title="Найти велосипед" onPress={() => handleSearch()} disabled={!bikeModel.trim()} loading={loading} />
         </View>
       </Card>
 
@@ -58,7 +65,9 @@ export default function BikesScreen() {
             <OfferRow key={offer.id} offer={offer} />
           ))}
           <Text style={[typography.caption, { color: colors.tertiaryLabel, marginTop: spacing.sm }]}>
-            Цены — демо-данные для прототипа.
+            {isAiConfigured
+              ? 'Цены и ссылки найдены ИИ через веб-поиск и могут быть неточными — проверяйте перед покупкой.'
+              : 'Цены — демо-данные для прототипа.'}
           </Text>
         </Card>
       ) : null}

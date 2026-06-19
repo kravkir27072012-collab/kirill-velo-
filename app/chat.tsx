@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { IOSButton } from '../src/components/IOSButton';
 import { IOSTextInput } from '../src/components/IOSTextInput';
-import { isAiConfigured, sendChatMessage } from '../src/services/anthropic';
+import { isAiConfigured, sendChatMessage } from '../src/services/gemini';
 import { radius, spacing, typography, useTheme } from '../src/theme';
 import { ChatMessage } from '../src/types';
 
@@ -72,7 +72,7 @@ export default function ChatScreen() {
       {!isAiConfigured ? (
         <View style={[styles.banner, { backgroundColor: colors.warning }]}>
           <Text style={styles.bannerText}>
-            Демо-режим: ANTHROPIC_API_KEY не настроен, ответы — заготовленные примеры.
+            Демо-режим: GEMINI_API_KEY не настроен, ответы — заготовленные примеры.
           </Text>
         </View>
       ) : null}
